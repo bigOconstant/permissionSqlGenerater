@@ -21,7 +21,6 @@
 /oculus/self-monitoring/blackouts:read
 /oculus/self-monitoring/help:read
 
-
 [role]
 /nettools/alerts/viewUpdateAndReassign
 [permissions]
