@@ -10,15 +10,29 @@ using namespace std;
 
 class BaseList {
   private:
+    string tableName;
     std::map<int,string> idMap;
     std::map<string,int> nameMap;
     int idIterator;
 
   public:
-    BaseList(){
-     // cout<<"Calling constructor"<<endl;
+    BaseList(string tn){
+      this->tableName = tn;
       this->idIterator = 1;
     }
+    BaseList(){
+      this->tableName = "";
+      this->idIterator = 1;
+    }
+
+    friend ostream &operator<<( ostream &output, const BaseList &D ) {
+         for(int i = 1; i < D.idIterator; ++i){
+           output<<"insert into "+D.tableName+ " (id,name) values ("<<i<<",'"<<D.GetById(i)<<"');\n";
+         }
+         
+         return output;            
+    };
+
     int InsertOrGet(string name) {
       if(name == "") {
         cout<<"empty"<<endl;
@@ -42,7 +56,10 @@ class BaseList {
       return retVal;
     };
     int Get(string name) {
-      return this->nameMap[name];
+      return this->nameMap.at(name);
+    }
+    string GetById( int id) const{
+      return idMap.at(id);
     }
 };
 
@@ -74,21 +91,17 @@ class PermissionList {
           continue;
         }
         if (line.find("[permissions]") != std::string::npos) {
-          // Next lines is permissions
            currentPermission = 1;
            continue;
         }
         if (line == "") {
-          //End permission list, Insert item. ready to read in next role
           int currentRole = 0;
           int currentPermission = 0;
-
           continue;
         }
 
         if(currentRole == 1) {
           ++currentRole;
-          // Let Current RoleId
           currentRoleId = this->Roles.Get(line);
           if(currentRoleId == 0) {
             cout<<"error"<<endl;;
@@ -100,10 +113,9 @@ class PermissionList {
         if(currentPermission > 0 && line != "" ) {
           p->roleId = currentRoleId;
           p->ResourceId = this->Resources.Get(line.substr(0,line.find(":")));
-          p->value = line.substr(line.find(":"),line.size()-1);
+          p->value = line.substr(line.find(":")+1,line.size()-1);
           p->id = this->Plist.size() +1;
           this->Plist.push_back(p);
-          cout<<p->id<<":"<<p->ResourceId<<":"<<p->roleId<<":"<<p->value<<endl;
           p = new Permission();
         }
 
@@ -114,13 +126,21 @@ class PermissionList {
       }
 
     }
+    friend ostream &operator<<( ostream &output, const PermissionList &PL ) {
+         int id = 1;
+        for (auto itr = PL.Plist.begin(); itr< PL.Plist.end(); ++itr){
+           output<<"insert into permissions (id,role_id,resource_id,value)";
+           output <<" values ("<<id<<","<<(*itr)->roleId<<","<<(*itr)->ResourceId<<",'"<<(*itr)->value<<"');\n";
+           ++id;
+        }
+         
+         return output;            
+    };
   
   private:
     vector<Permission *> Plist;
     BaseList Roles;
-    BaseList Resources;
-
-  
+    BaseList Resources;  
 };
 
  struct RoleItem{
@@ -132,7 +152,7 @@ class PermissionList {
 BaseList CreateRoleList(){
   string line;
   ifstream infile("data.txt");
-  BaseList retVal = BaseList();
+  BaseList retVal = BaseList("roles");
   int RoleItr = 0;
   while (std::getline(infile,line))
     {
@@ -151,7 +171,7 @@ BaseList CreateRoleList(){
 BaseList CreateResourceList() {
   string line;
   ifstream infile("data.txt");
-  BaseList retVal = BaseList();
+  BaseList retVal = BaseList("resources");
   bool startRead = false;
   while (std::getline(infile,line))
     {
@@ -170,19 +190,15 @@ BaseList CreateResourceList() {
 }
 
 int main() {
+
   std::vector<RoleItem> RoleList;
   BaseList Roles = CreateRoleList();
+  cout<<Roles<<endl;
+  
   BaseList Resources = CreateResourceList();
+  cout<<Resources<<endl;
   PermissionList *P = new PermissionList(Roles,Resources);
   P->ParseFiles();
-
-  cout<<"Starting app"<<endl;
-  string line;
-  ifstream infile("data.txt");
-  // while (std::getline(infile,line))
-  //   {
-  //     std::istringstream iss(line);
-  //     cout<<line<<endl;
-  //   }
+  cout<<*P<<endl;
   return 0;
 }
