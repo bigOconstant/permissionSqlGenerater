@@ -3,6 +3,8 @@
 Keeps track of primary keys and stuff to make it easier
 
 ## Build
+Requires a C++ compiler
+
 `g++ main.cpp`
 
 ## Run
